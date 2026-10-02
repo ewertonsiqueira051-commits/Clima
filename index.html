@@ -1,46 +1,241 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Painel meteorológico do Brasil com prioridade para o Paraná." />
-    <title>Tempo Paraná | Monitor meteorológico</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <a class="brand" href="#top" aria-label="Tempo Paraná início"><span class="brand-mark">◒</span><span>Tempo<span class="accent">PR</span></span></a>
-      <nav class="nav"><a class="active" href="#painel">Painel</a><a href="#analise">Análise</a><a href="#mapa">Mapa</a><a href="#sobre">Sobre</a></nav>
-      <span id="last-update" class="last-update">Atualizando…</span>
-    </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Painel meteorológico do Brasil com prioridade para o Paraná." />
+  <title>Tempo Paraná | Monitor meteorológico</title>
 
-    <main id="top" class="shell">
-      <section class="hero">
-        <div><p class="eyebrow">MONITOR METEOROLÓGICO · BRASIL</p><h1>Entenda o céu antes<br /><span class="accent">de sair.</span></h1><p class="hero-copy">Dados horários, leitura de nuvens e sinais de tempo severo em um painel leve, com foco no Paraná.</p></div>
-        <form id="search-form" class="search-box"><label for="location-input">Pesquisar cidade ou coordenada</label><div class="search-row"><input id="location-input" autocomplete="off" placeholder="Ex.: Londrina, PR" value="Curitiba, PR" /><button type="submit">Consultar</button></div><div id="search-status" class="search-status" role="status"></div></form>
-      </section>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 
-      <section id="painel" class="dashboard-grid">
-        <article class="card current-card"><div class="card-head"><div><p class="eyebrow">AGORA</p><h2 id="place-name">Curitiba, PR</h2></div><span id="weather-icon" class="weather-icon">☁</span></div><div class="current-main"><strong id="current-temp">--°</strong><div><p id="current-condition">Carregando…</p><small>Sensação de <span id="feels-like">--</span> · atualização automática</small></div></div><div class="metric-grid"><div><span>Umidade</span><strong id="humidity">--%</strong></div><div><span>Vento</span><strong id="wind">-- km/h</strong></div><div><span>Rajada</span><strong id="gust">-- km/h</strong></div><div><span>Pressão</span><strong id="pressure">-- hPa</strong></div></div></article>
-        <article id="analise" class="card risk-card"><div class="card-head"><div><p class="eyebrow">LEITURA EXPERIMENTAL</p><h2>Ambiente convectivo</h2></div><span id="risk-badge" class="badge neutral">calculando</span></div><div class="risk-score"><div class="score-ring"><span id="risk-score">--</span><small>/100</small></div><div><h3 id="risk-title">Avaliando atmosfera</h3><p id="risk-text">CAPE, instabilidade, nuvens e vento serão combinados aqui.</p></div></div><div class="bar"><span id="risk-bar"></span></div><p class="disclaimer">Índice orientativo. Não é probabilidade de tornado nem substitui INMET, Defesa Civil ou radar meteorológico.</p></article>
-      </section>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-      <section class="section-head"><div><p class="eyebrow">PRÓXIMAS HORAS</p><h2>O tempo mudando ao longo do dia</h2></div><span id="forecast-date" class="muted">--</span></section>
-      <section id="hourly" class="hourly-strip" aria-live="polite"></section>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top">
+      <span class="brand-mark">◒</span>
+      <span>Tempo<span class="accent">PR</span></span>
+    </a>
 
-      <section class="lower-grid">
-        <article class="card cloud-card"><div class="card-head"><div><p class="eyebrow">ANÁLISE DE NUVENS</p><h2>Camadas do céu</h2></div><span id="cloud-total" class="cloud-total">--%</span></div><div class="cloud-bars"><div><div class="bar-label"><span>Baixas</span><strong id="cloud-low-value">--%</strong></div><div class="bar"><span id="cloud-low"></span></div></div><div><div class="bar-label"><span>Médias</span><strong id="cloud-mid-value">--%</strong></div><div class="bar"><span id="cloud-mid"></span></div></div><div><div class="bar-label"><span>Altas</span><strong id="cloud-high-value">--%</strong></div><div class="bar"><span id="cloud-high"></span></div></div></div><p id="cloud-reading" class="reading">Aguardando dados de cobertura de nuvens.</p></article>
-        <article id="mapa" class="card map-card"><div class="card-head"><div><p class="eyebrow">LOCALIZAÇÃO</p><h2>Onde estamos olhando</h2></div><button id="locate-btn" class="icon-btn" title="Usar minha localização">⌖</button></div><div id="map"></div><p id="coordinates" class="coordinates">--</p></article>
-      </section>
+    <nav class="nav">
+      <a class="active" href="#painel">Painel</a>
+      <a href="#analise">Análise</a>
+      <a href="#mapa">Mapa</a>
+      <a href="#sobre">Sobre</a>
+    </nav>
 
-      <section id="sobre" class="notice"><span class="notice-icon">i</span><div><strong>Como interpretar este painel</strong><p>O sistema combina dados de previsão numérica para destacar condições favoráveis a chuva forte, trovoadas e rajadas. Tornados são fenômenos localizados e exigem confirmação por radar, observação e órgãos oficiais. Em emergência, siga a Defesa Civil: <b>199</b>.</p></div></section>
-    </main>
-    <footer><span>TempoPR · projeto experimental</span><span>Dados: Open-Meteo · Mapa: OpenStreetMap</span></footer>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="app.js"></script>
-  </body>
+    <span id="last-update" class="last-update">Atualizando…</span>
+  </header>
+
+  <main id="top" class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">MONITOR METEOROLÓGICO · BRASIL</p>
+        <h1>
+          Entenda o céu antes<br />
+          <span class="accent">de sair.</span>
+        </h1>
+        <p class="hero-copy">
+          Dados horários, leitura de nuvens e sinais de tempo severo em um painel leve, com foco no Paraná.
+        </p>
+      </div>
+
+      <form id="search-form" class="search-box">
+        <label for="location-input">Pesquisar cidade ou coordenada</label>
+
+        <div class="search-row">
+          <input
+            id="location-input"
+            autocomplete="off"
+            placeholder="Ex.: Londrina, PR"
+            value="Curitiba, PR"
+          />
+          <button type="submit">Consultar</button>
+        </div>
+
+        <div id="search-status" class="search-status" role="status"></div>
+      </form>
+    </section>
+
+    <section id="painel" class="dashboard-grid">
+      <article class="card current-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">AGORA</p>
+            <h2 id="place-name">Curitiba, PR</h2>
+          </div>
+
+          <span id="weather-icon" class="weather-icon">☁</span>
+        </div>
+
+        <div class="current-main">
+          <strong id="current-temp">--°</strong>
+
+          <div>
+            <p id="current-condition">Carregando…</p>
+            <small>
+              Sensação de <span id="feels-like">--</span> · atualização automática
+            </small>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div>
+            <span>Umidade</span>
+            <strong id="humidity">--%</strong>
+          </div>
+
+          <div>
+            <span>Vento</span>
+            <strong id="wind">-- km/h</strong>
+          </div>
+
+          <div>
+            <span>Rajada</span>
+            <strong id="gust">-- km/h</strong>
+          </div>
+
+          <div>
+            <span>Pressão</span>
+            <strong id="pressure">-- hPa</strong>
+          </div>
+        </div>
+      </article>
+
+      <article id="analise" class="card risk-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">LEITURA EXPERIMENTAL</p>
+            <h2>Ambiente convectivo</h2>
+          </div>
+
+          <span id="risk-badge" class="badge neutral">calculando</span>
+        </div>
+
+        <div class="risk-score">
+          <div class="score-ring">
+            <span id="risk-score">--</span>
+            <small>/100</small>
+          </div>
+
+          <div>
+            <h3 id="risk-title">Avaliando atmosfera</h3>
+            <p id="risk-text">
+              CAPE, instabilidade, nuvens e vento serão combinados aqui.
+            </p>
+          </div>
+        </div>
+
+        <div class="bar">
+          <span id="risk-bar"></span>
+        </div>
+
+        <p class="disclaimer">
+          Índice orientativo. Não é probabilidade de tornado nem substitui INMET, Defesa Civil ou radar meteorológico.
+        </p>
+      </article>
+    </section>
+
+    <section class="section-head">
+      <div>
+        <p class="eyebrow">PRÓXIMAS HORAS</p>
+        <h2>O tempo mudando ao longo do dia</h2>
+      </div>
+
+      <span id="forecast-date" class="muted">--</span>
+    </section>
+
+    <section id="hourly" class="hourly-strip" aria-live="polite"></section>
+
+    <section class="lower-grid">
+      <article class="card cloud-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">ANÁLISE DE NUVENS</p>
+            <h2>Camadas do céu</h2>
+          </div>
+
+          <span id="cloud-total" class="cloud-total">--%</span>
+        </div>
+
+        <div class="cloud-bars">
+          <div>
+            <div class="bar-label">
+              <span>Baixas</span>
+              <strong id="cloud-low-value">--%</strong>
+            </div>
+            <div class="bar">
+              <span id="cloud-low"></span>
+            </div>
+          </div>
+
+          <div>
+            <div class="bar-label">
+              <span>Médias</span>
+              <strong id="cloud-mid-value">--%</strong>
+            </div>
+            <div class="bar">
+              <span id="cloud-mid"></span>
+            </div>
+          </div>
+
+          <div>
+            <div class="bar-label">
+              <span>Altas</span>
+              <strong id="cloud-high-value">--%</strong>
+            </div>
+            <div class="bar">
+              <span id="cloud-high"></span>
+            </div>
+          </div>
+        </div>
+
+        <p id="cloud-reading" class="reading">
+          Aguardando dados de cobertura de nuvens.
+        </p>
+      </article>
+
+      <article id="mapa" class="card map-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">LOCALIZAÇÃO</p>
+            <h2>Onde estamos olhando</h2>
+          </div>
+
+          <button id="locate-btn" class="icon-btn" title="Usar minha localização">
+            ⌖
+          </button>
+        </div>
+
+        <div id="map"></div>
+        <p id="coordinates" class="coordinates">--</p>
+      </article>
+    </section>
+
+    <section id="sobre" class="notice">
+      <span class="notice-icon">i</span>
+
+      <div>
+        <strong>Como interpretar este painel</strong>
+        <p>
+          O sistema combina dados de previsão numérica para destacar condições favoráveis a chuva forte, trovoadas e rajadas. Tornados são fenômenos localizados e exigem confirmação por radar, observação e órgãos oficiais. Em emergência, siga a Defesa Civil: <b>199</b>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>TempoPR · projeto experimental</span>
+    <span>Dados: Open-Meteo · Mapa: OpenStreetMap</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- O ?v=2 força o navegador a carregar a versão nova -->
+  <script src="app.js?v=2"></script>
+</body>
 </html>
