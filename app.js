@@ -76,6 +76,7 @@ function localDate(iso) {
 
 function riskAnalysis(h, i) {
   const cape = Number(h.cape[i] || 0);
+  const inhibition = Number(h.convective_inhibition[i] || 0);
   const gust = Number(h.wind_gusts_10m[i] || 0);
   const rain = Number(h.precipitation[i] || 0);
   const lift = Number(h.lifted_index[i] || 0);
@@ -131,6 +132,7 @@ function riskAnalysis(h, i) {
   return {
     score,
     cape,
+    inhibition,
     gust,
     rain,
     cloud
@@ -141,7 +143,9 @@ function renderHourly(data) {
   const h = data.hourly;
   const now = new Date();
 
-  let start = h.time.findIndex((time) => new Date(time) >= now);
+  let start = h.time.findIndex(
+    (time) => new Date(time) >= now
+  );
 
   if (start < 0) {
     start = 0;
@@ -149,34 +153,41 @@ function renderHourly(data) {
 
   start = Math.min(start, h.time.length - 8);
 
-  $('hourly').innerHTML = Array.from({ length: 8 }, (_, x) => {
-    const i = start + x;
-    const date = new Date(h.time[i]);
-    const code = h.weather_code[i];
+  $('hourly').innerHTML = Array.from(
+    { length: 8 },
+    (_, x) => {
+      const i = start + x;
+      const date = new Date(h.time[i]);
+      const code = h.weather_code[i];
 
-    return `
-      <div class="hour">
-        <div class="hour-time">
-          ${x === 0 ? 'Agora' : date.toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-        </div>
+      return `
+        <div class="hour">
+          <div class="hour-time">
+            ${
+              x === 0
+                ? 'Agora'
+                : date.toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+            }
+          </div>
 
-        <div class="hour-icon">
-          ${icons[code] || '·'}
-        </div>
+          <div class="hour-icon">
+            ${icons[code] || '·'}
+          </div>
 
-        <div class="hour-temp">
-          ${fmt(h.temperature_2m[i])}°
-        </div>
+          <div class="hour-temp">
+            ${fmt(h.temperature_2m[i])}°
+          </div>
 
-        <div class="hour-rain">
-          ${fmt(h.precipitation_probability[i])}% chuva
+          <div class="hour-rain">
+            ${fmt(h.precipitation_probability[i])}% chuva
+          </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }
+  ).join('');
 
   $('forecast-date').textContent = localDate(h.time[start]);
 
@@ -229,17 +240,39 @@ function render(data, place) {
   );
 
   setText('current-temp', `${fmt(current.temperature_2m)}°`);
+
   setText(
     'current-condition',
     weatherText[current.weather_code] || 'Condição variável'
   );
-  setText('feels-like', `${fmt(current.apparent_temperature)}°C`);
-  setText('humidity', `${fmt(current.relative_humidity_2m)}%`);
-  setText('wind', `${fmt(current.wind_speed_10m)} km/h`);
-  setText('gust', `${fmt(current.wind_gusts_10m)} km/h`);
-  setText('pressure', `${fmt(current.pressure_msl)} hPa`);
 
-  $('weather-icon').textContent = icons[current.weather_code] || '☁';
+  setText(
+    'feels-like',
+    `${fmt(current.apparent_temperature)}°C`
+  );
+
+  setText(
+    'humidity',
+    `${fmt(current.relative_humidity_2m)}%`
+  );
+
+  setText(
+    'wind',
+    `${fmt(current.wind_speed_10m)} km/h`
+  );
+
+  setText(
+    'gust',
+    `${fmt(current.wind_gusts_10m)} km/h`
+  );
+
+  setText(
+    'pressure',
+    `${fmt(current.pressure_msl)} hPa`
+  );
+
+  $('weather-icon').textContent =
+    icons[current.weather_code] || '☁';
 
   setText(
     'coordinates',
@@ -260,28 +293,33 @@ function render(data, place) {
 
 async function findPlace(query) {
   const response = await fetch(
-    `${GEO}?name=${encodeURIComponent(query)}&count=1&language=pt&format=json`
+    `${GEO}?name=${encodeURIComponent(
+      query
+    )}&count=1&language=pt&format=json`
   );
 
   if (!response.ok) {
-    throw new Error('Falha na busca');
+    throw new Error('Falha na busca da cidade.');
   }
 
   const json = await response.json();
 
   if (!json.results || !json.results.length) {
-    throw new Error('Cidade não encontrada');
+    throw new Error('Cidade não encontrada.');
   }
 
   return json.results[0];
 }
 
 async function load(query) {
-  $('search-status').textContent = 'Consultando dados…';
+  $('search-status').textContent =
+    'Consultando dados…';
 
   try {
     const isCoordinates =
-      /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/.test(query);
+      /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/.test(
+        query
+      );
 
     const [latitude, longitude] = isCoordinates
       ? query.split(',').map(Number)
@@ -305,19 +343,37 @@ async function load(query) {
         'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m',
 
       hourly:
-        'temperature_2m,precipitation_probability,precipitation,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_gusts_10m,cape,cin,lifted_index',
+        'temperature_2m,precipitation_probability,precipitation,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_gusts_10m,cape,convective_inhibition,lifted_index',
 
       forecast_days: '3',
       timezone: 'America/Sao_Paulo'
     });
 
     const response = await fetch(`${API}?${params}`);
+    const raw = await response.text();
 
-    if (!response.ok) {
-      throw new Error('Falha no serviço meteorológico');
+    let responseData;
+
+    try {
+      responseData = JSON.parse(raw);
+    } catch {
+      responseData = null;
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        responseData?.reason ||
+          `Falha no serviço meteorológico (${response.status}).`
+      );
+    }
+
+    const data = responseData;
+
+    if (!data?.current || !data?.hourly) {
+      throw new Error(
+        'A API não retornou os dados meteorológicos esperados.'
+      );
+    }
 
     state.weather = data;
 
@@ -325,7 +381,9 @@ async function load(query) {
 
     $('search-status').textContent = '';
   } catch (error) {
-    $('search-status').textContent = error.message;
+    $('search-status').textContent =
+      error.message ||
+      'Não foi possível consultar o tempo.';
   }
 }
 
@@ -342,8 +400,10 @@ function updateMap(latitude, longitude, name) {
       }
     ).addTo(state.map);
 
-    state.marker = L.marker([latitude, longitude])
-      .addTo(state.map);
+    state.marker = L.marker([
+      latitude,
+      longitude
+    ]).addTo(state.map);
   } else {
     state.map.setView([latitude, longitude], 8);
     state.marker.setLatLng([latitude, longitude]);
